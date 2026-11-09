@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AccountType {
+  BANK
+  CASH
+}
+
+enum TransactionType {
+  EXPENSE
+  DEPOSIT
+  UPI_CREDIT
+  UPI_PAYMENT
+  ATM_WITHDRAWAL
+  TRANSFER
+}
+
+model User {
+  id            String        @id @default(cuid())
+  name          String?
+  email         String?       @unique
+  image         String?
+  accounts      Account[]
+  transactions  Transaction[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Account {
+  id            String        @id @default(cuid())
+  name          String
+  type          AccountType
+  currency      String        @default("INR")
+  balanceMinor  BigInt        @default(0)
+  lastFour      String?
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions  Transaction[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([userId])
+}
+
+model Transaction {
+  id              String          @id @default(cuid())
+  type            TransactionType
+  title           String
+  category        String?
+  note            String?
+  amountMinor     BigInt
+  occurredAt      DateTime        @default(now())
+  sourceText      String?
+  accountId       String
+  userId          String
+  account         Account         @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime        @default(now())
+
+  @@index([userId, occurredAt])
+  @@index([accountId, occurredAt])
+}
